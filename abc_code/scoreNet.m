@@ -92,14 +92,14 @@ for i=1:simParams.nOdors
     fakeMeanFRdifCDF = getFRcdf(fakeMeanFRdif,-500,500);
     
     
-    wdON(i) = wasserstein_1d(realFRONcdf,fakeMeanFRcdfON);
-    wdOFF(i) = wasserstein_1d(realFROFFcdf,fakeMeanFRcdfOFF);
-    wdONOFF(i) = wasserstein_1d(realFRdifCDF,fakeMeanFRdifCDF);
+    wdON(i) = shifted_sigmoid(1,1,.6,0,10,wasserstein_1d(realFRONcdf,fakeMeanFRcdfON));
+    wdOFF(i) = shifted_sigmoid(1,1,.6,0,10,wasserstein_1d(realFROFFcdf,fakeMeanFRcdfOFF));
+    wdONOFF(i) = shifted_sigmoid(1,1,.6,0,10,wasserstein_1d(realFRdifCDF,fakeMeanFRdifCDF));
 end
 
-wdScoreON = log(mean(wdON));
-wdScoreOFF = log(mean(wdOFF));
-wdScoreONOFF = log(mean(wdONOFF));
+wdScoreON = mean(wdON);
+wdScoreOFF = mean(wdOFF);
+wdScoreONOFF = mean(wdONOFF);
 accuracyONscore = (1 - mean(accuracyON));
 accuracyOFFscore = (1 - mean(accuracyOFF));
 accuracyONOFFscore = mean([accuracyONOFF accuracyOFFON]);
