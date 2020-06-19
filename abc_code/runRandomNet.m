@@ -163,6 +163,14 @@ simParams.stim_duration = 1/dt;
 simParams.poststim_duration = 1/dt;
 simParams.stim_amplitude = 10;
 
+[~,compname]=system('hostname');
+if (strcmp(compname,'silmaril'))
+    pool = parpool(5);
+elseif (strcmp(compname,'miller-lab-ubuntu2'))
+    pool = parpool(5);
+else
+    error('Computer name not recognized')
+end
 % Run through 5 odor stimuli for 10 trials each, recording responses
 for i=1:simParams.nOdors
     % Run nTrials with GC input ON
@@ -261,5 +269,6 @@ save([datadir '/simParams.mat'],'simParams','-mat')
 
 score = scoreNet(datadir);
 save([datadir '/score.mat'],'score','-mat')
+delete(pool)
 end
 

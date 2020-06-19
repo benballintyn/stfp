@@ -72,7 +72,7 @@ def main():
             bounds={'connProbOB2E_prior':(0,.5),'connProbOB2I_prior':(0,.5),'connProbGC2E_prior':(0,.5),'connProbGC2I_prior':(0,.5)},acq_noise_var=[0,0,0,0,0,0,0,0,0,0],pool=pool)
 
 
-    posterior = bolfi.fit(n_evidence=100)
+    posterior = bolfi.fit(n_evidence=200)
 
     with open(datadir / 'bolfi_result.pkl','wb') as fname:
         pickle.dump(bolfi,fname)

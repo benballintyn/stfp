@@ -182,6 +182,15 @@ for i=1:simParams.nOdors
     spikeGenProbsOFF_stim(:,i) = setSpikeGenProbs(net,tempspkprobs,glomeruliByOdor(i,:),newProbs);
 end
 
+% start parallel pool depending on what computer its on
+[~,compname]=system('hostname');
+if (strcmp(strtrim(compname),'silmaril'))
+    pool = parpool(5);
+elseif (strcmp(strtrim(compname),'miller-lab-ubuntu2'))
+    pool = parpool(5);
+else
+    error('Computer name not recognized')
+end
 % Run through 5 odor stimuli for 10 trials each, recording responses
 parfor i=1:simParams.nOdors
     % Run nTrials with GC input ON
@@ -280,5 +289,6 @@ save([datadir '/simParams.mat'],'simParams','-mat')
 
 score = scoreNet(datadir);
 save([datadir '/score.mat'],'score','-mat')
+delete(pool)
 end
 

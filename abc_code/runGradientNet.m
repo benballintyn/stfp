@@ -10,7 +10,7 @@ function score = runGradientNet(maxConnProbOB2E,maxConnProbOB2I,maxConnProbGC2E,
 % 7. meanWeightI2I
 % 8. stdWeightI2I
 addpath(genpath('~/phd/easySim'))
-
+netDir = '~/phd/stfp/abc_results/gradientNet';
 netParams.maxConnProbOB2E = maxConnProbOB2E;
 netParams.maxConnProbOB2I = maxConnProbOB2I;
 netParams.maxConnProbGC2E = maxConnProbGC2E;
@@ -38,10 +38,10 @@ fE2E = @(D) (sqrt(2)/(netParams.sigmaE2E*sqrt(pi)))*(exp((-D.^2)./(2*netParams.s
 fE2I = @(D) (sqrt(2)/(netParams.sigmaE2I*sqrt(pi)))*(exp((-D.^2)./(2*netParams.sigmaE2I^2)));
 fI2E = @(D) (sqrt(2)/(netParams.sigmaI2E*sqrt(pi)))*(exp((-D.^2)./(2*netParams.sigmaI2E^2)));
 fI2I = @(D) (sqrt(2)/(netParams.sigmaI2I*sqrt(pi)))*(exp((-D.^2)./(2*netParams.sigmaI2I^2)));
-fOB2E = @(x) (sqrt(2)/(netParams.sigmaOB2PC*sqrt(pi)))*(exp((-x.^2)./(2*netParams.sigmaOB2PC^2)));
-fOB2I = @(x) (sqrt(2)/(netParams.sigmaOB2PC*sqrt(pi)))*(exp((-x.^2)./(2*netParams.sigmaOB2PC^2)));
-fGC2E = @(x) (sqrt(2)/(netParams.sigmaGC2PC*sqrt(pi)))*(exp((-((netParams.xmax - x).^2)./(2*netParams.sigmaGC2PC))));
-fGC2I = @(x) (sqrt(2)/(netParams.sigmaGC2PC*sqrt(pi)))*(exp((-((netParams.xmax - x).^2)./(2*netParams.sigmaGC2PC))));
+fOB2E = @(x) (sqrt(2)/(netParams.sigmaOB2E*sqrt(pi)))*(exp((-x.^2)./(2*netParams.sigmaOB2E^2)));
+fOB2I = @(x) (sqrt(2)/(netParams.sigmaOB2I*sqrt(pi)))*(exp((-x.^2)./(2*netParams.sigmaOB2I^2)));
+fGC2E = @(x) (sqrt(2)/(netParams.sigmaGC2E*sqrt(pi)))*(exp((-((netParams.xmax - x).^2)./(2*netParams.sigmaGC2E))));
+fGC2I = @(x) (sqrt(2)/(netParams.sigmaGC2I*sqrt(pi)))*(exp((-((netParams.xmax - x).^2)./(2*netParams.sigmaGC2I))));
 netParams.connProbFunctionE2E = @(D) netParams.maxConnProbE2E*fE2E(D)./max(fE2E(drange));
 netParams.connProbFunctionE2I = @(D) netParams.maxConnProbE2I*fE2I(D)./max(fE2I(drange));
 netParams.connProbFunctionI2E = @(D) netParams.maxConnProbI2E*fI2E(D)./max(fI2E(drange));
@@ -53,25 +53,25 @@ netParams.connProbFunctionGC2I = @(x) netParams.maxConnProbGC2I*fGC2I(x)./max(fG
 netParams.gaussWeightFunction = @(D) lognrnd(log(netParams.meanWeight)-.5,1,size(D)); % (citation: Koulakov)
 netParams.gradientWeightFunction = @(D) lognrnd(log(netParams.meanWeight)-.5,1,size(D)); % (citation: Koulakov)
 
-fprintf('connProbOB2E: %1$f\n connProbOB2I: %2$f\n connProbGC2E: %3$f\n connProbGC2I: %4$f\n',connProbOB2E,connProbOB2I,connProbGC2E,connProbGC2I)
+fprintf('maxConnProbOB2E: %1$f\n maxConnProbOB2I: %2$f\n maxConnProbGC2E: %3$f\n maxConnProbGC2I: %4$f\n sigmaOB2PC: %5$f\n sigmaGC2PC: %6$f\n',maxConnProbOB2E,maxConnProbOB2I,maxConnProbGC2E,maxConnProbGC2I,sigmaOB2PC,sigmaGC2PC)
 
 simParams.nOdors = 5;
 simParams.nTrials = 10;
 simParams.fracGlomeruliPerOdor = .1;
 simParams.nGlomeruli = 100;
 
-if (~exist('~/phd/stfp/abc_results/randomNet','dir'))
-    mkdir('~/phd/stfp/abc_results/randomNet')
+if (~exist(netDir,'dir'))
+    mkdir(netDir)
 end
-if (exist('~/phd/stfp/abc_results/randomNet/runNum.mat','file'))
-    runNum = load(['~/phd/stfp/abc_results/randomNet/runNum.mat']); runNum=runNum.runNum;
+if (exist([netDir '/runNum.mat'],'file'))
+    runNum = load([netDir '/runNum.mat']); runNum=runNum.runNum;
     runNum = runNum+1;
-    save('~/phd/stfp/abc_results/randomNet/runNum.mat','runNum','-mat')
+    save([netDir '/runNum.mat'],'runNum','-mat')
 else
     runNum = 1;
-    save('~/phd/stfp/abc_results/randomNet/runNum.mat','runNum','-mat')
+    save([netDir '/runNum.mat'],'runNum','-mat')
 end
-datadir = ['~/phd/stfp/abc_results/randomNet/' num2str(runNum)];
+datadir = [netDir '/' num2str(runNum)];
 
 if (~exist(datadir,'dir'))
     mkdir(datadir)
@@ -124,8 +124,8 @@ gradientConnParamsOB2I.connProbFunction = netParams.connProbFunctionOB2I;
 gradientConnParamsOB2I.weightFunction = netParams.gradientWeightFunction;
 for i=1:simParams.nGlomeruli
     net.addSpikeGenerator(['OB' num2str(i)],100,'excitatory',0);
-    net.connect(-(i+1),1,'random',gradientConnParamsOB2E);
-    net.connect(-(i+1),2,'random',gradientConnParamsOB2I);
+    net.connect(-(i+1),1,'gradient',gradientConnParamsOB2E);
+    net.connect(-(i+1),2,'gradient',gradientConnParamsOB2I);
 end
 
 % Assign glomeruli to odors
@@ -135,15 +135,15 @@ for i=1:simParams.nOdors
 end
 
 % Connect the GC input to E group
-randomConnParamsGC2E.connProbFunction = connProbFunctionGC2E;
-randomConnParamsGC2E.weightDistribution = netParams.gradientWeightFunction;
-randomConnParamsGC2I.connProbFunction = connProbFunctionGC2I;
-randomConnParamsGC2I.weightDistribution = netParams.gradientWeightFunction;
-net.connect(-1,1,'random',randomConnParamsGC2E);
-net.connect(-1,2,'random',randomConnParamsGC2I);
+gradientConnParamsGC2E.connProbFunction = netParams.connProbFunctionGC2E;
+gradientConnParamsGC2E.weightFunction = netParams.gradientWeightFunction;
+gradientConnParamsGC2I.connProbFunction = netParams.connProbFunctionGC2I;
+gradientConnParamsGC2I.weightFunction = netParams.gradientWeightFunction;
+net.connect(-1,1,'gradient',gradientConnParamsGC2E);
+net.connect(-1,2,'gradient',gradientConnParamsGC2I);
 
 % use GPU
-useGpu = 1;
+useGpu = 0;
 
 % Initialize the network variables
 [V,Vreset,Cm,Gl,El,Vth,Vth0,Vth_max,tau_ref,dth,p0,GsynE,GsynI,VsynE,VsynI,tau_synE,tau_synI,...
@@ -169,102 +169,131 @@ end
 
 % Add to sim params
 simParams.dt = dt;
-simParams.cells2record = gather(cells2record);
+if (useGpu)
+    simParams.cells2record = gather(cells2record);
+else
+    simParams.cells2record = cells2record;
+end
 simParams.baseline_duration = 1/dt;
 simParams.stim_duration = 1/dt;
 simParams.poststim_duration = 1/dt;
 simParams.stim_amplitude = 10;
-
-% Run through 5 odor stimuli for 10 trials each, recording responses
 for i=1:simParams.nOdors
+    newProbs = zeros(1,length(glomeruliByOdor(i,:)));
+    spikeGenProbsON_baseline(:,i) = setSpikeGenProbs(net,spikeGenProbs,glomeruliByOdor(i,:),newProbs);
+    spikeGenProbsON_baseline(:,i) = setSpikeGenProbs(net,spikeGenProbsON_baseline(:,i),1,10*dt);
+
+    newProbs = ones(1,length(glomeruliByOdor(i,:)))*(simParams.stim_amplitude*dt);
+    spikeGenProbsON_stim(:,i) = setSpikeGenProbs(net,spikeGenProbsON_baseline(:,i),glomeruliByOdor(i,:),newProbs);
+
+    newProbs = zeros(1,length(glomeruliByOdor(i,:)));
+    [tempspkprobs] = setSpikeGenProbs(net,spikeGenProbs,1,0); % Silence GC
+    spikeGenProbsOFF_baseline(:,i) = setSpikeGenProbs(net,tempspkprobs,glomeruliByOdor(i,:),newProbs);
+
+    newProbs = ones(1,length(glomeruliByOdor(i,:)))*(simParams.stim_amplitude*dt);
+    spikeGenProbsOFF_stim(:,i) = setSpikeGenProbs(net,tempspkprobs,glomeruliByOdor(i,:),newProbs);
+end
+
+
+[~,compname] = system('hostname');
+if (strcmp(strtrim(compname),'silmaril'))
+	pool=parpool(5);
+elseif (strcmp(strtrim(compname),'miller-lab-ubuntu2'))
+	pool=parpool(5);
+else
+	error('computer name not recognized')
+end
+% Run through 5 odor stimuli for 10 trials each, recording responses
+parfor i=1:simParams.nOdors
     % Run nTrials with GC input ON
     for j=1:simParams.nTrials
         % Reinitialize the network variables
         [V,Vth,Isra,GsynE,GsynI,D,F,r1,r2,o1,o2,Iapp] = resetVars(net,useGpu);
-        
+
         % Reset spike generator probabilities
-        newProbs = zeros(1,length(glomeruliByOdor(i,:)));
-        [spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,glomeruliByOdor(i,:),newProbs);
-        [spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,1,10*dt);
+        %newProbs = zeros(1,length(glomeruliByOdor(i,:)));
+        %[spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,glomeruliByOdor(i,:),newProbs);
+        %[spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,1,10*dt);
         % Run 1 second of baseline activity
         nT = double(1/dt);
         spkfid = fopen([datadir '/odor_' num2str(i) '_trial_' num2str(j) '_baseline_GCON.bin'],'W');
-        [GsynMax,V,Vth,Isra,GsynE,GsynI,D,F,r1,r2,o1,o2] = runAEVLIFNetGPU_mex(V,Vreset,tau_ref,Vth,Vth0,Vth_max,...
+        [~,V,Vth,Isra,GsynE,GsynI,D,F,r1,r2,o1,o2] = runAEVLIFNetCPU_mex(V,Vreset,tau_ref,Vth,Vth0,Vth_max,...
               Isra,tau_sra,a,b,VsynE,VsynI,GsynE,GsynI,GsynMax,tau_D,tau_F,f_fac,D,F,has_facilitation,has_depression,...
-              p0,tau_synE,tau_synI,Cm,Gl,El,dth,Iapp,std_noise,dt,ecells,icells,spikeGenProbs,cells2record,...
+              p0,tau_synE,tau_synI,Cm,Gl,El,dth,Iapp,std_noise,dt,ecells,icells,spikeGenProbsON_baseline(:,i),cells2record,...
               is_plastic,plasticity_type,C,r1,r2,o1,o2,A2plus,A3plus,A2minus,A3minus,...
-              tau_plus,tau_x,tau_minus,tau_y,nT,spkfid);
+              tau_plus,tau_x,tau_minus,tau_y,nT,spkfid,false);
         fclose(spkfid);
-        
+
         % Run 1 second of activity with odor input
-        newProbs = ones(1,length(glomeruliByOdor(i,:)))*(simParams.stim_amplitude*dt);
-        [spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,glomeruliByOdor(i,:),newProbs);
+        %newProbs = ones(1,length(glomeruliByOdor(i,:)))*(simParams.stim_amplitude*dt);
+        %[spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,glomeruliByOdor(i,:),newProbs);
         nT = double(1/dt);
         spkfid = fopen([datadir '/odor_' num2str(i) '_trial_' num2str(j) '_stim_GCON.bin'],'W');
-        [GsynMax,V,Vth,Isra,GsynE,GsynI,D,F,r1,r2,o1,o2] = runAEVLIFNetGPU_mex(V,Vreset,tau_ref,Vth,Vth0,Vth_max,...
+        [~,V,Vth,Isra,GsynE,GsynI,D,F,r1,r2,o1,o2] = runAEVLIFNetCPU_mex(V,Vreset,tau_ref,Vth,Vth0,Vth_max,...
               Isra,tau_sra,a,b,VsynE,VsynI,GsynE,GsynI,GsynMax,tau_D,tau_F,f_fac,D,F,has_facilitation,has_depression,...
-              p0,tau_synE,tau_synI,Cm,Gl,El,dth,Iapp,std_noise,dt,ecells,icells,spikeGenProbs,cells2record,...
+              p0,tau_synE,tau_synI,Cm,Gl,El,dth,Iapp,std_noise,dt,ecells,icells,spikeGenProbsON_stim(:,i),cells2record,...
               is_plastic,plasticity_type,C,r1,r2,o1,o2,A2plus,A3plus,A2minus,A3minus,...
-              tau_plus,tau_x,tau_minus,tau_y,nT,spkfid);
+              tau_plus,tau_x,tau_minus,tau_y,nT,spkfid,false);
         fclose(spkfid);
-        
+
         % Run 1 additional second without odor input
-        newProbs = zeros(1,length(glomeruliByOdor(i,:)));
-        [spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,glomeruliByOdor(i,:),newProbs);
+        %newProbs = zeros(1,length(glomeruliByOdor(i,:)));
+        %[spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,glomeruliByOdor(i,:),newProbs);
         nT = double(1/dt);
         spkfid = fopen([datadir '/odor_' num2str(i) '_trial_' num2str(j) '_poststim_GCON.bin'],'W');
-        [GsynMax,V,Vth,Isra,GsynE,GsynI,D,F,r1,r2,o1,o2] = runAEVLIFNetGPU_mex(V,Vreset,tau_ref,Vth,Vth0,Vth_max,...
+        [~,V,Vth,Isra,GsynE,GsynI,D,F,r1,r2,o1,o2] = runAEVLIFNetCPU_mex(V,Vreset,tau_ref,Vth,Vth0,Vth_max,...
               Isra,tau_sra,a,b,VsynE,VsynI,GsynE,GsynI,GsynMax,tau_D,tau_F,f_fac,D,F,has_facilitation,has_depression,...
-              p0,tau_synE,tau_synI,Cm,Gl,El,dth,Iapp,std_noise,dt,ecells,icells,spikeGenProbs,cells2record,...
+              p0,tau_synE,tau_synI,Cm,Gl,El,dth,Iapp,std_noise,dt,ecells,icells,spikeGenProbsON_baseline(:,i),cells2record,...
               is_plastic,plasticity_type,C,r1,r2,o1,o2,A2plus,A3plus,A2minus,A3minus,...
-              tau_plus,tau_x,tau_minus,tau_y,nT,spkfid);
+	      tau_plus,tau_x,tau_minus,tau_y,nT,spkfid,false);
         fclose(spkfid);
     end
-    
+
     % run nTrials with GC input Off
-    [spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,1,0); % Silence GC
+    %[spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,1,0); % Silence GC
     for j=1:simParams.nTrials
         % Reinitialize the network variables
         [V,Vth,Isra,GsynE,GsynI,D,F,r1,r2,o1,o2,Iapp] = resetVars(net,useGpu);
-        
+
         % Reset spike generator probabilities
-        newProbs = zeros(1,length(glomeruliByOdor(i,:)));
-        [spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,glomeruliByOdor(i,:),newProbs);
+        %newProbs = zeros(1,length(glomeruliByOdor(i,:)));
+        %[spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,glomeruliByOdor(i,:),newProbs);
         % Run 1 second of baseline activity
         nT = double(1/dt);
         spkfid = fopen([datadir '/odor_' num2str(i) '_trial_' num2str(j) '_baseline_GCOFF.bin'],'W');
-        [GsynMax,V,Vth,Isra,GsynE,GsynI,D,F,r1,r2,o1,o2] = runAEVLIFNetGPU_mex(V,Vreset,tau_ref,Vth,Vth0,Vth_max,...
+        [~,V,Vth,Isra,GsynE,GsynI,D,F,r1,r2,o1,o2] = runAEVLIFNetCPU_mex(V,Vreset,tau_ref,Vth,Vth0,Vth_max,...
               Isra,tau_sra,a,b,VsynE,VsynI,GsynE,GsynI,GsynMax,tau_D,tau_F,f_fac,D,F,has_facilitation,has_depression,...
-              p0,tau_synE,tau_synI,Cm,Gl,El,dth,Iapp,std_noise,dt,ecells,icells,spikeGenProbs,cells2record,...
+              p0,tau_synE,tau_synI,Cm,Gl,El,dth,Iapp,std_noise,dt,ecells,icells,spikeGenProbsOFF_baseline(:,i),cells2record,...
               is_plastic,plasticity_type,C,r1,r2,o1,o2,A2plus,A3plus,A2minus,A3minus,...
-              tau_plus,tau_x,tau_minus,tau_y,nT,spkfid);
+              tau_plus,tau_x,tau_minus,tau_y,nT,spkfid,false);
         fclose(spkfid);
-        
+
         % Run 1 second of activity with odor input
-        newProbs = ones(1,length(glomeruliByOdor(i,:)))*(simParams.stim_amplitude*dt);
-        [spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,glomeruliByOdor(i,:),newProbs);
+        %newProbs = ones(1,length(glomeruliByOdor(i,:)))*(simParams.stim_amplitude*dt);
+        %[spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,glomeruliByOdor(i,:),newProbs);
         nT = double(1/dt);
         spkfid = fopen([datadir '/odor_' num2str(i) '_trial_' num2str(j) '_stim_GCOFF.bin'],'W');
-        [GsynMax,V,Vth,Isra,GsynE,GsynI,D,F,r1,r2,o1,o2] = runAEVLIFNetGPU_mex(V,Vreset,tau_ref,Vth,Vth0,Vth_max,...
+        [~,V,Vth,Isra,GsynE,GsynI,D,F,r1,r2,o1,o2] = runAEVLIFNetCPU_mex(V,Vreset,tau_ref,Vth,Vth0,Vth_max,...
               Isra,tau_sra,a,b,VsynE,VsynI,GsynE,GsynI,GsynMax,tau_D,tau_F,f_fac,D,F,has_facilitation,has_depression,...
-              p0,tau_synE,tau_synI,Cm,Gl,El,dth,Iapp,std_noise,dt,ecells,icells,spikeGenProbs,cells2record,...
+              p0,tau_synE,tau_synI,Cm,Gl,El,dth,Iapp,std_noise,dt,ecells,icells,spikeGenProbsOFF_stim(:,i),cells2record,...
               is_plastic,plasticity_type,C,r1,r2,o1,o2,A2plus,A3plus,A2minus,A3minus,...
-              tau_plus,tau_x,tau_minus,tau_y,nT,spkfid);
+              tau_plus,tau_x,tau_minus,tau_y,nT,spkfid,false);
         fclose(spkfid);
-        
+
         % Run 1 additional second without odor input
-        newProbs = zeros(1,length(glomeruliByOdor(i,:)));
-        [spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,glomeruliByOdor(i,:),newProbs);
+        %newProbs = zeros(1,length(glomeruliByOdor(i,:)));
+        %[spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,glomeruliByOdor(i,:),newProbs);
         nT = double(1/dt);
         spkfid = fopen([datadir '/odor_' num2str(i) '_trial_' num2str(j) '_poststim_GCOFF.bin'],'W');
-        [GsynMax,V,Vth,Isra,GsynE,GsynI,D,F,r1,r2,o1,o2] = runAEVLIFNetGPU_mex(V,Vreset,tau_ref,Vth,Vth0,Vth_max,...
+        [~,V,Vth,Isra,GsynE,GsynI,D,F,r1,r2,o1,o2] = runAEVLIFNetCPU_mex(V,Vreset,tau_ref,Vth,Vth0,Vth_max,...
               Isra,tau_sra,a,b,VsynE,VsynI,GsynE,GsynI,GsynMax,tau_D,tau_F,f_fac,D,F,has_facilitation,has_depression,...
-              p0,tau_synE,tau_synI,Cm,Gl,El,dth,Iapp,std_noise,dt,ecells,icells,spikeGenProbs,cells2record,...
+              p0,tau_synE,tau_synI,Cm,Gl,El,dth,Iapp,std_noise,dt,ecells,icells,spikeGenProbsOFF_baseline(:,i),cells2record,...
               is_plastic,plasticity_type,C,r1,r2,o1,o2,A2plus,A3plus,A2minus,A3minus,...
-              tau_plus,tau_x,tau_minus,tau_y,nT,spkfid);
+              tau_plus,tau_x,tau_minus,tau_y,nT,spkfid,false);
         fclose(spkfid);
     end
 end
+
 fclose('all');
 save([datadir '/net.mat'],'net','-mat')
 save([datadir '/GsynMax.mat'],'GsynMax','-mat')
@@ -273,5 +302,6 @@ save([datadir '/simParams.mat'],'simParams','-mat')
 
 score = scoreNet(datadir);
 save([datadir '/score.mat'],'score','-mat')
+delete(pool)
 end
 

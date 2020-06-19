@@ -1,6 +1,6 @@
 function [] = analyzeNet(datadir)
 net = load([datadir '/net.mat']); net=net.net;
-netParams = load([datadir '/netParams.mat']); netParams=netParams.netParams;
+netParams = load([datadir '/netParams.mat']); netParams=netParams.netParams
 simParams = load([datadir '/simParams.mat']); simParams=simParams.simParams;
 exc_inds = net.groupInfo(1).start_ind:net.groupInfo(1).end_ind;
 inh_inds = net.groupInfo(2).start_ind:net.groupInfo(2).end_ind;
