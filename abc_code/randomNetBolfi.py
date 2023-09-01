@@ -25,6 +25,7 @@ def main():
     datadir = Path('/home/ben/phd/stfp/abc_results/randomNet')
 
     eng = matlab.engine.start_matlab()
+    eng.rng('shuffle')
 
     eng.addpath(eng.genpath('~/phd/stfp/abc_code'))
     eng.addpath(eng.genpath('~/phd/easySim'))
@@ -49,11 +50,11 @@ def main():
 
     ie_connProbOB2E,ie_connProbOB2I,ie_connProbGC2E,ie_connProbGC2I,ie_scores = eng.load_initial_evidence_randomNet('/home/ben/phd/stfp/abc_results/randomNet',nargout=5)
 
-    ie_connProbOB2E  = np.asarray(ie_connProbOB2E)
-    ie_connProbOB2I  = np.asarray(ie_connProbOB2I)
-    ie_connProbGC2E  = np.asarray(ie_connProbGC2E)
-    ie_connProbGC2I  = np.asarray(ie_connProbGC2I)
-    ie_scores       = np.asarray(ie_scores)
+    ie_connProbOB2E  = np.asarray(ie_connProbOB2E).flatten()
+    ie_connProbOB2I  = np.asarray(ie_connProbOB2I).flatten()
+    ie_connProbGC2E  = np.asarray(ie_connProbGC2E).flatten()
+    ie_connProbGC2I  = np.asarray(ie_connProbGC2I).flatten()
+    ie_scores       = np.asarray(ie_scores).flatten()
 
     #ie_log_scores = np.log(ie_scores)
 
@@ -72,7 +73,7 @@ def main():
             bounds={'connProbOB2E_prior':(0,.5),'connProbOB2I_prior':(0,.5),'connProbGC2E_prior':(0,.5),'connProbGC2I_prior':(0,.5)},acq_noise_var=[0,0,0,0,0,0,0,0,0,0],pool=pool)
 
 
-    posterior = bolfi.fit(n_evidence=200)
+    posterior = bolfi.fit(n_evidence=1000)
 
     with open(datadir / 'bolfi_result.pkl','wb') as fname:
         pickle.dump(bolfi,fname)

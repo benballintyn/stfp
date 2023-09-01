@@ -1,29 +1,94 @@
-function score = runRandomNetCPU(connProbOB2E,connProbOB2I,connProbGC2E,connProbGC2I)
+function score = runGradientNet_manual(maxConnProbOB2E,maxConnProbOB2I,maxConnProbGC2E,maxConnProbGC2I,...
+                                       sigmaOB2E,sigmaOB2I,sigmaGC2E,sigmaGC2I,GC2Edir,GC2Idir,Iwt_mult,...
+                                       maxConnProbE2E,maxConnProbE2I,maxConnProbI2E,maxConnProbI2I,...
+                                       sigmaE2E,sigmaE2I,sigmaI2E,sigmaI2I,netDir,recompile)
 % Inputs
-% Parameters
-% 1. meanWeightE2E
-% 2. stdWeightE2E
-% 3. meanWeightE2I
-% 4. stdWeightE2I
-% 5. meanWeightI2E
-% 6. stdWeightI2E
-% 7. meanWeightI2I
-% 8. stdWeightI2I
-addpath(genpath('~/phd/easySim'))
+% Note: All sigma parameters are in meters. Recommend values between 1e-6
+% and 1e-3 for all sigma parameters
+% 1. maxConnProbOB2E - max possible connection probability between
+%                      olfactory inputs and the excitatory group
+% 2. maxConnProbOB2I - max possible connection probability between
+%                      olfactory inputs and the inhibitory group
+% 3. maxConnProbGC2E - max possible connection probability between GC
+%                      inputs and the excitatory group
+% 4. maxConnProbGC2I - max possible connection probability between GC
+%                      inputs and the inhibitory group
+% 5. sigmaOB2E       - length scale over which the connection probability
+%                      between OB and the excitatory group decreases (for
+%                      gradient connection). Gives standard deviation of
+%                      half-gaussian.
+% 6. sigmaOB2I       - length scale over which the connection probability
+%                      between OB and the inhibitory group decreases (for
+%                      gradient connection). Gives standard deviation of
+%                      half-gaussian.
+% 7. sigmaGC2E       - length scale over which the connection probability
+%                      between GC and the excitatory group decreases (for
+%                      gradient connection). Gives standard deviation of
+%                      half-gaussian.
+% 8. sigmaGC2I       - length scale over which the connection probability
+%                      between GC and the inhibitory group decreases (for 
+%                      gradient connection). Gives standard deviation of 
+%                      half-gaussian.
+% 9. GC2Edir         - specifies direction of gradient of connection
+%                      probability for GC --> E connection. Values > 0
+%                      indicate it is in the same direction as the OB --> E
+%                      connection. Values < 0 indicate the opposite
+%                      direction.
+% 10. GC2Idir        - specifies direction of gradient of connection
+%                      probability for GC --> I connection. Values > 0
+%                      indicate it is in the same direction as the OB --> E
+%                      connection. Values < 0 indicate the opposite
+%                      direction.
+% 11. Iwt_mult       - Multiplier of inhibitory synaptic strengths relative
+%                      to excitatory synapses.
+% 12. maxConnProbE2E - max possible connection probability between
+%                      excitatory neurons (E --> E).
+% 13. maxConnProbE2I - max possible connection probability between
+%                      excitatory neurons and inhibitory neurons (E --> I).
+% 14. maxConnProbI2E - max possible connection probability between
+%                      inhibitory neurons and excitatory neurons (I --> E).
+% 15. maxConnProbI2I - max possible connection probability between
+%                      inhibitory neurons (I --> I).
+% 16. sigmaE2E       - length scale over which the connection probability
+%                      between excitatory neurons decreases. Gives standard
+%                      deviation of half-gaussian
+% 16. sigmaE2I       - length scale over which the connection probability
+%                      between excitatory neurons and inhibitory neurons 
+%                      decreases. Gives standard deviation of half-gaussian
+% 16. sigmaI2E       - length scale over which the connection probability
+%                      between inhibitory and excitatory neurons decreases.
+%                      Gives standard deviation of half-gaussian
+% 16. sigmaI2I       - length scale over which the connection probability
+%                      between inhibitory neurons decreases. Gives standard
+%                      deviation of half-gaussian
+% 17. netDir         - path to folder where spikes and parameters are to be
+%                      saved
+% 18. recompile      - boolean (0 or 1) value for whether or not to
+%                      recompile the required mex functions
 randState = rng;
-netParams.connProbOB2E = connProbOB2E;
-netParams.connProbOB2I = connProbOB2I;
-netParams.connProbGC2E = connProbGC2E;
-netParams.connProbGC2I = connProbGC2I;
-netParams.meanWeight = 1.785e-8; % from calculation for 1mV EPSP
-netParams.maxConnProbE2E = .15; % (Levy & Reyes, 2012)
-netParams.maxConnProbE2I = .5;  % (Levy & Reyes, 2012)
-netParams.maxConnProbI2E = .5;  % (Levy & Reyes, 2012)
-netParams.maxConnProbI2I = 1; % (Galaretta & Hestrin, 2002)
-netParams.sigmaE2E = 100e-6; % (Levy & Reyes, 2012)
-netParams.sigmaE2I = 100e-6; % (Levy & Reyes, 2012)
-netParams.sigmaI2E = 100e-6; % (Levy & Reyes, 2012)
-netParams.sigmaI2I = 100e-6; % (guess)
+addpath(genpath('~/phd/easySim')); % change to path containing easySim directory. not required if easySim is already on the MATLAB path
+
+netParams.maxConnProbOB2E = maxConnProbOB2E;
+netParams.maxConnProbOB2I = maxConnProbOB2I;
+netParams.maxConnProbGC2E = maxConnProbGC2E;
+netParams.maxConnProbGC2I = maxConnProbGC2I;
+netParams.sigmaOB2E = sigmaOB2E;
+netParams.sigmaOB2I = sigmaOB2I;
+netParams.sigmaGC2E = sigmaGC2E;
+netParams.sigmaGC2I = sigmaGC2I;
+netParams.Iwt_mult = Iwt_mult;
+netParams.meanWeightE = 1.785e-8; % from calculation for 1mV EPSP
+netParams.meanWeightI = netParams.meanWeightE*netParams.Iwt_mult;
+netParams.maxConnProbE2E = maxConnProbE2E; % (Levy & Reyes, 2012)
+netParams.maxConnProbE2I = maxConnProbE2I;  % (Levy & Reyes, 2012)
+netParams.maxConnProbI2E = maxConnProbI2E;  % (Levy & Reyes, 2012)
+netParams.maxConnProbI2I = maxConnProbI2I; % (Galaretta & Hestrin, 2002)
+netParams.sigmaE2E = sigmaE2E; % (Levy & Reyes, 2012)
+netParams.sigmaE2I = sigmaE2I; % (Levy & Reyes, 2012)
+netParams.sigmaI2E = sigmaI2E; % (Levy & Reyes, 2012)
+netParams.sigmaI2I = sigmaI2I; % (guess)
+netParams.GC2Edir = GC2Edir;
+netParams.GC2Idir = GC2Idir;
 netParams.xmin = 0;
 netParams.xmax = 1e-3;
 netParams.ymin = 0;
@@ -34,35 +99,39 @@ fE2E = @(D) (sqrt(2)/(netParams.sigmaE2E*sqrt(pi)))*(exp((-D.^2)./(2*netParams.s
 fE2I = @(D) (sqrt(2)/(netParams.sigmaE2I*sqrt(pi)))*(exp((-D.^2)./(2*netParams.sigmaE2I^2)));
 fI2E = @(D) (sqrt(2)/(netParams.sigmaI2E*sqrt(pi)))*(exp((-D.^2)./(2*netParams.sigmaI2E^2)));
 fI2I = @(D) (sqrt(2)/(netParams.sigmaI2I*sqrt(pi)))*(exp((-D.^2)./(2*netParams.sigmaI2I^2)));
+fOB2E = @(x) (sqrt(2)/(netParams.sigmaOB2E*sqrt(pi)))*(exp((-x.^2)./(2*netParams.sigmaOB2E^2)));
+fOB2I = @(x) (sqrt(2)/(netParams.sigmaOB2I*sqrt(pi)))*(exp((-x.^2)./(2*netParams.sigmaOB2I^2)));
+if (netParams.GC2Edir > 0)
+    fGC2E = @(x) (sqrt(2)/(netParams.sigmaGC2E*sqrt(pi)))*(exp((-x.^2)./(2*netParams.sigmaGC2E^2)));
+else
+    fGC2E = @(x) (sqrt(2)/(netParams.sigmaGC2E*sqrt(pi)))*(exp((-((netParams.xmax - x).^2)./(2*netParams.sigmaGC2E^2))));
+end
+if (netParams.GC2Idir > 0)
+    fGC2I = @(x) (sqrt(2)/(netParams.sigmaGC2I*sqrt(pi)))*(exp((-x.^2)./(2*netParams.sigmaGC2I^2)));
+else
+    fGC2I = @(x) (sqrt(2)/(netParams.sigmaGC2I*sqrt(pi)))*(exp((-((netParams.xmax - x).^2)./(2*netParams.sigmaGC2I^2))));
+end
+
 netParams.connProbFunctionE2E = @(D) netParams.maxConnProbE2E*fE2E(D)./max(fE2E(drange));
 netParams.connProbFunctionE2I = @(D) netParams.maxConnProbE2I*fE2I(D)./max(fE2I(drange));
 netParams.connProbFunctionI2E = @(D) netParams.maxConnProbI2E*fI2E(D)./max(fI2E(drange));
 netParams.connProbFunctionI2I = @(D) netParams.maxConnProbI2I*fI2I(D)./max(fI2I(drange));
-
-netParams.gaussWeightFunction = @(D) lognrnd(log(netParams.meanWeight)-.5,1,size(D)); % (citation: Koulakov)
-
-fprintf('connProbOB2E: %1$f\n connProbOB2I: %2$f\n connProbGC2E: %3$f\n connProbGC2I: %4$f\n',connProbOB2E,connProbOB2I,connProbGC2E,connProbGC2I)
+netParams.connProbFunctionOB2E = @(x) netParams.maxConnProbOB2E*fOB2E(x)./max(fOB2E(drange));
+netParams.connProbFunctionOB2I = @(x) netParams.maxConnProbOB2I*fOB2I(x)./max(fOB2I(drange));
+netParams.connProbFunctionGC2E = @(x) netParams.maxConnProbGC2E*fGC2E(x)./max(fGC2E(drange));
+netParams.connProbFunctionGC2I = @(x) netParams.maxConnProbGC2I*fGC2I(x)./max(fGC2I(drange));
+netParams.gaussWeightFunctionE = @(D) lognrnd(log(netParams.meanWeightE)-.5,1,size(D)); % (citation: Koulakov)
+netParams.gaussWeightFunctionI = @(D) lognrnd(log(netParams.meanWeightI)-.5,1,size(D)); % (citation: Koulakov)
+netParams.gradientWeightFunction = @(D) lognrnd(log(netParams.meanWeightE)-.5,1,size(D)); % (citation: Koulakov)
 
 simParams.nOdors = 5;
 simParams.nTrials = 10;
 simParams.fracGlomeruliPerOdor = .1;
 simParams.nGlomeruli = 100;
+simParams.randState = randState;
 
-if (~exist('~/phd/stfp/abc_results/randomNet','dir'))
-    mkdir('~/phd/stfp/abc_results/randomNet')
-end
-if (exist('~/phd/stfp/abc_results/randomNet/runNum.mat','file'))
-    runNum = load(['~/phd/stfp/abc_results/randomNet/runNum.mat']); runNum=runNum.runNum;
-    runNum = runNum+1;
-    save('~/phd/stfp/abc_results/randomNet/runNum.mat','runNum','-mat')
-else
-    runNum = 1;
-    save('~/phd/stfp/abc_results/randomNet/runNum.mat','runNum','-mat')
-end
-datadir = ['~/phd/stfp/abc_results/randomNet/' num2str(runNum)];
-
-if (~exist(datadir,'dir'))
-    mkdir(datadir)
+if (~exist(netDir,'dir'))
+    mkdir(netDir)
 end
 
 net = AEVLIFnetwork();
@@ -74,26 +143,23 @@ net.addGroup('I',200,'inhibitory',1,'std_noise',700e-12,'depressed_synapses',tru
 maxWeight = 10e-7;
 
 % Set parameters for E --> E connection
-weightRange = 1e-12:1e-12:maxWeight;
-px = lognpdf(weightRange,log(netParams.meanWeight)-.5,1);
-lognWeightDist = weightDistribution(weightRange, px);
 gaussConnParamsE2E.connProbFunction = netParams.connProbFunctionE2E;
-gaussConnParamsE2E.weightFunction= netParams.gaussWeightFunction;
+gaussConnParamsE2E.weightFunction= netParams.gaussWeightFunctionE;
 gaussConnParamsE2E.useWrap = true;
 
 % Set parameters for E --> I connection
 gaussConnParamsE2I.connProbFunction = netParams.connProbFunctionE2I;
-gaussConnParamsE2I.weightFunction = netParams.gaussWeightFunction;
+gaussConnParamsE2I.weightFunction = netParams.gaussWeightFunctionE;
 gaussConnParamsE2I.useWrap = true;
 
 % Set parameters for I --> E connection
 gaussConnParamsI2E.connProbFunction = netParams.connProbFunctionE2I;
-gaussConnParamsI2E.weightFunction = netParams.gaussWeightFunction;
+gaussConnParamsI2E.weightFunction = netParams.gaussWeightFunctionI;
 gaussConnParamsI2E.useWrap = true;
 
 % Set parameters for I --> I connection
 gaussConnParamsI2I.connProbFunction = netParams.connProbFunctionI2I;
-gaussConnParamsI2I.weightFunction = netParams.gaussWeightFunction;
+gaussConnParamsI2I.weightFunction = netParams.gaussWeightFunctionI;
 gaussConnParamsI2I.useWrap = true;
 
 % add connections to network object
@@ -106,14 +172,14 @@ net.connect(2,2,'gaussian',gaussConnParamsI2I);
 net.addSpikeGenerator('GC',500,'excitatory',10)
 
 % Add olfactory bulb inputs to E and I groups
-randomConnParamsOB2E.connProb = connProbOB2E;
-randomConnParamsOB2E.weightDistribution = lognWeightDist;
-randomConnParamsOB2I.connProb = connProbOB2I;
-randomConnParamsOB2I.weightDistribution = lognWeightDist;
+gradientConnParamsOB2E.connProbFunction = netParams.connProbFunctionOB2E;
+gradientConnParamsOB2E.weightFunction = netParams.gradientWeightFunction;
+gradientConnParamsOB2I.connProbFunction = netParams.connProbFunctionOB2I;
+gradientConnParamsOB2I.weightFunction = netParams.gradientWeightFunction;
 for i=1:simParams.nGlomeruli
     net.addSpikeGenerator(['OB' num2str(i)],100,'excitatory',0);
-    net.connect(-(i+1),1,'random',randomConnParamsOB2E);
-    net.connect(-(i+1),2,'random',randomConnParamsOB2I);
+    net.connect(-(i+1),1,'gradient',gradientConnParamsOB2E);
+    net.connect(-(i+1),2,'gradient',gradientConnParamsOB2I);
 end
 
 % Assign glomeruli to odors
@@ -123,12 +189,12 @@ for i=1:simParams.nOdors
 end
 
 % Connect the GC input to E group
-randomConnParamsGC2E.connProb = connProbGC2E;
-randomConnParamsGC2E.weightDistribution = lognWeightDist;
-randomConnParamsGC2I.connProb = connProbGC2I;
-randomConnParamsGC2I.weightDistribution = lognWeightDist;
-net.connect(-1,1,'random',randomConnParamsGC2E);
-net.connect(-1,2,'random',randomConnParamsGC2I);
+gradientConnParamsGC2E.connProbFunction = netParams.connProbFunctionGC2E;
+gradientConnParamsGC2E.weightFunction = netParams.gradientWeightFunction;
+gradientConnParamsGC2I.connProbFunction = netParams.connProbFunctionGC2I;
+gradientConnParamsGC2I.weightFunction = netParams.gradientWeightFunction;
+net.connect(-1,1,'gradient',gradientConnParamsGC2E);
+net.connect(-1,2,'gradient',gradientConnParamsGC2I);
 
 % use GPU
 useGpu = 0;
@@ -141,7 +207,7 @@ useGpu = 0;
           setupNet(net,useGpu);
 
 % Compile the CUDA code to run the network
-if (runNum == 1)
+if (recompile)
     compileSimulator(net,useGpu,length(cells2record));
 end
 
@@ -166,32 +232,22 @@ simParams.baseline_duration = 1/dt;
 simParams.stim_duration = 1/dt;
 simParams.poststim_duration = 1/dt;
 simParams.stim_amplitude = 10;
-simParams.randState = randState;
 for i=1:simParams.nOdors
     newProbs = zeros(1,length(glomeruliByOdor(i,:)));
     spikeGenProbsON_baseline(:,i) = setSpikeGenProbs(net,spikeGenProbs,glomeruliByOdor(i,:),newProbs);
     spikeGenProbsON_baseline(:,i) = setSpikeGenProbs(net,spikeGenProbsON_baseline(:,i),1,10*dt);
-    
+
     newProbs = ones(1,length(glomeruliByOdor(i,:)))*(simParams.stim_amplitude*dt);
     spikeGenProbsON_stim(:,i) = setSpikeGenProbs(net,spikeGenProbsON_baseline(:,i),glomeruliByOdor(i,:),newProbs);
-    
+
     newProbs = zeros(1,length(glomeruliByOdor(i,:)));
     [tempspkprobs] = setSpikeGenProbs(net,spikeGenProbs,1,0); % Silence GC
     spikeGenProbsOFF_baseline(:,i) = setSpikeGenProbs(net,tempspkprobs,glomeruliByOdor(i,:),newProbs);
-    
+
     newProbs = ones(1,length(glomeruliByOdor(i,:)))*(simParams.stim_amplitude*dt);
     spikeGenProbsOFF_stim(:,i) = setSpikeGenProbs(net,tempspkprobs,glomeruliByOdor(i,:),newProbs);
 end
 
-% start parallel pool depending on what computer its on
-[~,compname]=system('hostname');
-if (strcmp(strtrim(compname),'silmaril'))
-    pool = parpool(5);
-elseif (strcmp(strtrim(compname),'miller-lab-ubuntu2'))
-    pool = parpool(5);
-else
-    error('Computer name not recognized')
-end
 % Run through 5 odor stimuli for 10 trials each, recording responses
 parfor i=1:simParams.nOdors
     % Run nTrials with GC input ON
@@ -205,75 +261,75 @@ parfor i=1:simParams.nOdors
         %[spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,1,10*dt);
         % Run 1 second of baseline activity
         nT = double(1/dt);
-        spkfid = fopen([datadir '/odor_' num2str(i) '_trial_' num2str(j) '_baseline_GCON.bin'],'W');
+        spkfid = fopen([netDir '/odor_' num2str(i) '_trial_' num2str(j) '_baseline_GCON.bin'],'W');
         [~,V,Vth,Isra,GsynE,GsynI,D,F,r1,r2,o1,o2] = runAEVLIFNetCPU_mex(V,Vreset,tau_ref,Vth,Vth0,Vth_max,...
               Isra,tau_sra,a,b,VsynE,VsynI,GsynE,GsynI,GsynMax,tau_D,tau_F,f_fac,D,F,has_facilitation,has_depression,...
               p0,tau_synE,tau_synI,Cm,Gl,El,dth,Iapp,std_noise,dt,ecells,icells,spikeGenProbsON_baseline(:,i),cells2record,...
               is_plastic,plasticity_type,C,r1,r2,o1,o2,A2plus,A3plus,A2minus,A3minus,...
               tau_plus,tau_x,tau_minus,tau_y,nT,spkfid,false);
         fclose(spkfid);
-        
+
         % Run 1 second of activity with odor input
         %newProbs = ones(1,length(glomeruliByOdor(i,:)))*(simParams.stim_amplitude*dt);
         %[spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,glomeruliByOdor(i,:),newProbs);
         nT = double(1/dt);
-        spkfid = fopen([datadir '/odor_' num2str(i) '_trial_' num2str(j) '_stim_GCON.bin'],'W');
+        spkfid = fopen([netDir '/odor_' num2str(i) '_trial_' num2str(j) '_stim_GCON.bin'],'W');
         [~,V,Vth,Isra,GsynE,GsynI,D,F,r1,r2,o1,o2] = runAEVLIFNetCPU_mex(V,Vreset,tau_ref,Vth,Vth0,Vth_max,...
               Isra,tau_sra,a,b,VsynE,VsynI,GsynE,GsynI,GsynMax,tau_D,tau_F,f_fac,D,F,has_facilitation,has_depression,...
               p0,tau_synE,tau_synI,Cm,Gl,El,dth,Iapp,std_noise,dt,ecells,icells,spikeGenProbsON_stim(:,i),cells2record,...
               is_plastic,plasticity_type,C,r1,r2,o1,o2,A2plus,A3plus,A2minus,A3minus,...
               tau_plus,tau_x,tau_minus,tau_y,nT,spkfid,false);
         fclose(spkfid);
-        
+
         % Run 1 additional second without odor input
         %newProbs = zeros(1,length(glomeruliByOdor(i,:)));
         %[spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,glomeruliByOdor(i,:),newProbs);
         nT = double(1/dt);
-        spkfid = fopen([datadir '/odor_' num2str(i) '_trial_' num2str(j) '_poststim_GCON.bin'],'W');
+        spkfid = fopen([netDir '/odor_' num2str(i) '_trial_' num2str(j) '_poststim_GCON.bin'],'W');
         [~,V,Vth,Isra,GsynE,GsynI,D,F,r1,r2,o1,o2] = runAEVLIFNetCPU_mex(V,Vreset,tau_ref,Vth,Vth0,Vth_max,...
               Isra,tau_sra,a,b,VsynE,VsynI,GsynE,GsynI,GsynMax,tau_D,tau_F,f_fac,D,F,has_facilitation,has_depression,...
               p0,tau_synE,tau_synI,Cm,Gl,El,dth,Iapp,std_noise,dt,ecells,icells,spikeGenProbsON_baseline(:,i),cells2record,...
               is_plastic,plasticity_type,C,r1,r2,o1,o2,A2plus,A3plus,A2minus,A3minus,...
-              tau_plus,tau_x,tau_minus,tau_y,nT,spkfid,false);
+	      tau_plus,tau_x,tau_minus,tau_y,nT,spkfid,false);
         fclose(spkfid);
     end
-    
+
     % run nTrials with GC input Off
     %[spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,1,0); % Silence GC
     for j=1:simParams.nTrials
         % Reinitialize the network variables
         [V,Vth,Isra,GsynE,GsynI,D,F,r1,r2,o1,o2,Iapp] = resetVars(net,useGpu);
-        
+
         % Reset spike generator probabilities
         %newProbs = zeros(1,length(glomeruliByOdor(i,:)));
         %[spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,glomeruliByOdor(i,:),newProbs);
         % Run 1 second of baseline activity
         nT = double(1/dt);
-        spkfid = fopen([datadir '/odor_' num2str(i) '_trial_' num2str(j) '_baseline_GCOFF.bin'],'W');
+        spkfid = fopen([netDir '/odor_' num2str(i) '_trial_' num2str(j) '_baseline_GCOFF.bin'],'W');
         [~,V,Vth,Isra,GsynE,GsynI,D,F,r1,r2,o1,o2] = runAEVLIFNetCPU_mex(V,Vreset,tau_ref,Vth,Vth0,Vth_max,...
               Isra,tau_sra,a,b,VsynE,VsynI,GsynE,GsynI,GsynMax,tau_D,tau_F,f_fac,D,F,has_facilitation,has_depression,...
               p0,tau_synE,tau_synI,Cm,Gl,El,dth,Iapp,std_noise,dt,ecells,icells,spikeGenProbsOFF_baseline(:,i),cells2record,...
               is_plastic,plasticity_type,C,r1,r2,o1,o2,A2plus,A3plus,A2minus,A3minus,...
               tau_plus,tau_x,tau_minus,tau_y,nT,spkfid,false);
         fclose(spkfid);
-        
+
         % Run 1 second of activity with odor input
         %newProbs = ones(1,length(glomeruliByOdor(i,:)))*(simParams.stim_amplitude*dt);
         %[spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,glomeruliByOdor(i,:),newProbs);
         nT = double(1/dt);
-        spkfid = fopen([datadir '/odor_' num2str(i) '_trial_' num2str(j) '_stim_GCOFF.bin'],'W');
+        spkfid = fopen([netDir '/odor_' num2str(i) '_trial_' num2str(j) '_stim_GCOFF.bin'],'W');
         [~,V,Vth,Isra,GsynE,GsynI,D,F,r1,r2,o1,o2] = runAEVLIFNetCPU_mex(V,Vreset,tau_ref,Vth,Vth0,Vth_max,...
               Isra,tau_sra,a,b,VsynE,VsynI,GsynE,GsynI,GsynMax,tau_D,tau_F,f_fac,D,F,has_facilitation,has_depression,...
               p0,tau_synE,tau_synI,Cm,Gl,El,dth,Iapp,std_noise,dt,ecells,icells,spikeGenProbsOFF_stim(:,i),cells2record,...
               is_plastic,plasticity_type,C,r1,r2,o1,o2,A2plus,A3plus,A2minus,A3minus,...
               tau_plus,tau_x,tau_minus,tau_y,nT,spkfid,false);
         fclose(spkfid);
-        
+
         % Run 1 additional second without odor input
         %newProbs = zeros(1,length(glomeruliByOdor(i,:)));
         %[spikeGenProbs] = setSpikeGenProbs(net,spikeGenProbs,glomeruliByOdor(i,:),newProbs);
         nT = double(1/dt);
-        spkfid = fopen([datadir '/odor_' num2str(i) '_trial_' num2str(j) '_poststim_GCOFF.bin'],'W');
+        spkfid = fopen([netDir '/odor_' num2str(i) '_trial_' num2str(j) '_poststim_GCOFF.bin'],'W');
         [~,V,Vth,Isra,GsynE,GsynI,D,F,r1,r2,o1,o2] = runAEVLIFNetCPU_mex(V,Vreset,tau_ref,Vth,Vth0,Vth_max,...
               Isra,tau_sra,a,b,VsynE,VsynI,GsynE,GsynI,GsynMax,tau_D,tau_F,f_fac,D,F,has_facilitation,has_depression,...
               p0,tau_synE,tau_synI,Cm,Gl,El,dth,Iapp,std_noise,dt,ecells,icells,spikeGenProbsOFF_baseline(:,i),cells2record,...
@@ -282,14 +338,14 @@ parfor i=1:simParams.nOdors
         fclose(spkfid);
     end
 end
-fclose('all');
-save([datadir '/net.mat'],'net','-mat')
-save([datadir '/GsynMax.mat'],'GsynMax','-mat')
-save([datadir '/netParams.mat'],'netParams','-mat')
-save([datadir '/simParams.mat'],'simParams','-mat')
 
-score = scoreNet(datadir);
-save([datadir '/score.mat'],'score','-mat')
-delete(pool)
+fclose('all');
+save([netDir '/net.mat'],'net','-mat')
+save([netDir '/GsynMax.mat'],'GsynMax','-mat')
+save([netDir '/netParams.mat'],'netParams','-mat')
+save([netDir '/simParams.mat'],'simParams','-mat')
+
+score = scoreNet(netDir);
+save([netDir '/score.mat'],'score','-mat')
 end
 

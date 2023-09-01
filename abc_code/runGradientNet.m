@@ -9,16 +9,21 @@ function score = runGradientNet(maxConnProbOB2E,maxConnProbOB2I,maxConnProbGC2E,
 % 6. stdWeightI2E
 % 7. meanWeightI2I
 % 8. stdWeightI2I
+randState = rng;
 addpath(genpath('~/phd/easySim'))
-netDir = '~/phd/stfp/abc_results/gradientNet';
+if (exist('/media/ben/Manwe/phd','dir'))
+    netDir  = '/media/ben/Manwe/phd/stfp/abc_results/gradientNet';
+else
+    netDir = '/home/ben/phd/stfp/abc_results/gradientNet';
+end
 netParams.maxConnProbOB2E = maxConnProbOB2E;
 netParams.maxConnProbOB2I = maxConnProbOB2I;
 netParams.maxConnProbGC2E = maxConnProbGC2E;
 netParams.maxConnProbGC2I = maxConnProbGC2I;
-netParams.sigmaOB2E = sigmaOB2PC;
-netParams.sigmaOB2I = sigmaOB2PC;
-netParams.sigmaGC2E = sigmaGC2PC;
-netParams.sigmaGC2I = sigmaGC2PC;
+netParams.sigmaOB2E = sigmaOB2PC*1e-6;
+netParams.sigmaOB2I = sigmaOB2PC*1e-6;
+netParams.sigmaGC2E = sigmaGC2PC*1e-6;
+netParams.sigmaGC2I = sigmaGC2PC*1e-6;
 netParams.meanWeight = 1.785e-8; % from calculation for 1mV EPSP
 netParams.maxConnProbE2E = .15; % (Levy & Reyes, 2012)
 netParams.maxConnProbE2I = .5;  % (Levy & Reyes, 2012)
@@ -40,8 +45,8 @@ fI2E = @(D) (sqrt(2)/(netParams.sigmaI2E*sqrt(pi)))*(exp((-D.^2)./(2*netParams.s
 fI2I = @(D) (sqrt(2)/(netParams.sigmaI2I*sqrt(pi)))*(exp((-D.^2)./(2*netParams.sigmaI2I^2)));
 fOB2E = @(x) (sqrt(2)/(netParams.sigmaOB2E*sqrt(pi)))*(exp((-x.^2)./(2*netParams.sigmaOB2E^2)));
 fOB2I = @(x) (sqrt(2)/(netParams.sigmaOB2I*sqrt(pi)))*(exp((-x.^2)./(2*netParams.sigmaOB2I^2)));
-fGC2E = @(x) (sqrt(2)/(netParams.sigmaGC2E*sqrt(pi)))*(exp((-((netParams.xmax - x).^2)./(2*netParams.sigmaGC2E))));
-fGC2I = @(x) (sqrt(2)/(netParams.sigmaGC2I*sqrt(pi)))*(exp((-((netParams.xmax - x).^2)./(2*netParams.sigmaGC2I))));
+fGC2E = @(x) (sqrt(2)/(netParams.sigmaGC2E*sqrt(pi)))*(exp((-((netParams.xmax - x).^2)./(2*netParams.sigmaGC2E^2))));
+fGC2I = @(x) (sqrt(2)/(netParams.sigmaGC2I*sqrt(pi)))*(exp((-((netParams.xmax - x).^2)./(2*netParams.sigmaGC2I^2))));
 netParams.connProbFunctionE2E = @(D) netParams.maxConnProbE2E*fE2E(D)./max(fE2E(drange));
 netParams.connProbFunctionE2I = @(D) netParams.maxConnProbE2I*fE2I(D)./max(fE2I(drange));
 netParams.connProbFunctionI2E = @(D) netParams.maxConnProbI2E*fI2E(D)./max(fI2E(drange));
@@ -59,6 +64,7 @@ simParams.nOdors = 5;
 simParams.nTrials = 10;
 simParams.fracGlomeruliPerOdor = .1;
 simParams.nGlomeruli = 100;
+simParams.randState = randState;
 
 if (~exist(netDir,'dir'))
     mkdir(netDir)
@@ -72,7 +78,7 @@ else
     save([netDir '/runNum.mat'],'runNum','-mat')
 end
 datadir = [netDir '/' num2str(runNum)];
-
+disp(['Current run # = ' num2str(runNum)]);
 if (~exist(datadir,'dir'))
     mkdir(datadir)
 end

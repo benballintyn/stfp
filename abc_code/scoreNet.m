@@ -92,9 +92,9 @@ for i=1:simParams.nOdors
     fakeMeanFRdifCDF = getFRcdf(fakeMeanFRdif,-500,500);
     
     
-    wdON(i) = shifted_sigmoid(1,1,.6,0,10,wasserstein_1d(realFRONcdf,fakeMeanFRcdfON));
-    wdOFF(i) = shifted_sigmoid(1,1,.6,0,10,wasserstein_1d(realFROFFcdf,fakeMeanFRcdfOFF));
-    wdONOFF(i) = shifted_sigmoid(1,1,.6,0,10,wasserstein_1d(realFRdifCDF,fakeMeanFRdifCDF));
+    wdON(i) = shifted_sigmoid(1,1,3,0,2,wasserstein_1d(realFRONcdf,fakeMeanFRcdfON));
+    wdOFF(i) = shifted_sigmoid(1,1,3,0,2,wasserstein_1d(realFROFFcdf,fakeMeanFRcdfOFF));
+    wdONOFF(i) = shifted_sigmoid(1,1,3,0,2,wasserstein_1d(realFRdifCDF,fakeMeanFRdifCDF));
 end
 
 wdScoreON = mean(wdON);
@@ -113,5 +113,7 @@ fprintf('Odor Discrimination (OFF): %1$f\n',accuracyOFFscore)
 fprintf('Odor Discrimination (ON/OFF): %1$f\n',accuracyONOFFscore)
 score = sum(subscores.^2);
 fprintf('Total score: %1$f\n',score)
+save([datadir '/score.mat'],'score','-mat')
+save([datadir '/subscores.mat'],'subscores','-mat')
 end
 
